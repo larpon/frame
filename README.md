@@ -1,5 +1,8 @@
 # (Media) frame
-A (work in progress) KF5 plasmoid port of the KDE (picture) frame widget.
+A (work in progress) KDE Frameworks 5 / Plasmoid port of the KDE4 "(Picture) Frame" widget
+
+## Install
+Use cmake
 
 ## Planned TODO
 * KIO support
