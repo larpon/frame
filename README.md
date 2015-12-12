@@ -11,9 +11,10 @@ Please note that the sections below are just keywords for me to remember. Thus n
 ## OPTIONAL Use a prefix
 `cmake -DCMAKE_INSTALL_PREFIX=/home/user/Environments/KDE/`
 
-## Help system find cmake QML plugins (cmake installs per default to /usr/local/... )
-E.g. add to .bashrc:
+## Help system find cmake QML plugins
+cmake installs per default to /usr/local/[...] so add
 `export QML2_IMPORT_PATH=${QML2_IMPORT_PATH}:/usr/local/lib/x86_64-linux-gnu/qml`
+to ~/.profile
 
 ## Building
 From project dir (where CMakeLists.txt are located):
