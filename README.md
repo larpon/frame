@@ -3,6 +3,8 @@ A (work in progress) KF5 plasmoid port of the KDE (picture) frame widget.
 
 This port does not aim to be 100% true to the original.
 
+Please note that the sections below are just keywords for me to remember. Thus not intended for the general public :)
+
 # Building with cmake
 `sudo apt-get cmake`
 
