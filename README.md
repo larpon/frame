@@ -36,7 +36,8 @@ Could not find a package configuration file provided by "ECM" (requested
     ecm-config.cmake
 ...
 
-sudo apt-get install extra-cmake-modules
+Fix:
+`sudo apt-get install extra-cmake-modules`
 
 
 ## KDE kf5 dev libs:
@@ -73,9 +74,12 @@ Could not find a package configuration file provided by "KF5WindowSystem"
 ...
 Could NOT find KF5 (missing: I18n KIO Plasma PlasmaQuick WindowSystem)
 
+Fix:
+```
 sudo apt-get install libkf5i18n-dev
 sudo apt-get install kio-dev
 sudo apt-get install plasma-workspace-dev
+```
 
 # Random notes
 plasmashell output:
