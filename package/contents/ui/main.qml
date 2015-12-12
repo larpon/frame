@@ -571,8 +571,7 @@ Item {
             }
         }
     }
-    
-    
+        
     PlasmaComponents.Button {
         
         anchors.centerIn: parent
@@ -584,6 +583,5 @@ Item {
             plasmoid.action("configure").trigger();
         }
     }
-    
     
 }
