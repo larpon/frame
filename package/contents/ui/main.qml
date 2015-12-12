@@ -462,17 +462,23 @@ Item {
         
     }
     
+    // Visualization of the count down
+    
+    // TODO Find a nicer count down visualization
+    // - maybe based on a QML Animation to offload to an animation thread
+    // - don't use a timer
     Timer {
         id: countDownTimer
         
         property real elapsed: 0
+        property real steps: config.interval / 500
         
-        interval: config.interval / 100
+        interval: config.interval / steps
         repeat: true
         running: nextTimer.running
         triggeredOnStart: true
         onTriggered: {
-            progressBar.value = Utility.remap(elapsed,0,100,0,1)
+            progressBar.value = Utility.remap(elapsed,0,steps,0,1)
             elapsed++
         }
         onRunningChanged: {
@@ -481,7 +487,6 @@ Item {
         }
     }
     
-    // Visualization of the count down
     ProgressBar {
         id: progressBar
         
@@ -492,7 +497,7 @@ Item {
             panel : Rectangle
             {
                 color: "transparent"
-                implicitWidth: 40
+                implicitWidth: Math.max(main.width, main.height) / 20
                 implicitHeight: implicitWidth
 
                 Rectangle
