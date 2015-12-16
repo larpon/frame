@@ -124,8 +124,7 @@ Item {
         if(future.length > 0) {
             setActiveSource(popFuture())
             countDownTimer.restart()
-        }
-        else {
+        } else {
             //setLoading()
             items.get(function(filePath){
                 setActiveSource(filePath)
