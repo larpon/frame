@@ -121,15 +121,19 @@ Item {
         if(itemCount > 1)
             pushHistory(active)
         
-        var filePath;
+        if(future.length > 0) {
+            setActiveSource(popFuture())
+            countDownTimer.restart()
+        }
+        else {
+            //setLoading()
+            items.get(function(filePath){
+                setActiveSource(filePath)
+                countDownTimer.restart()
+            },true)
+        }
         
-        if(future.length > 0)
-            filePath = popFuture()
-        else
-            filePath = items.getRandom()
         
-        setActiveSource(filePath)
-        countDownTimer.restart()
     }
     
     function previousItem() {

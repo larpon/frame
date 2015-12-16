@@ -24,6 +24,9 @@
 #include <QString>
 #include <QHash>
 #include <QFileSystemWatcher>
+#include <QJSValue>
+
+#include <KIO/Job>
 
 class MediaFrame : public QObject
 {
@@ -49,23 +52,27 @@ class MediaFrame : public QObject
         
         Q_INVOKABLE bool has(const QString &path);
         
-        Q_INVOKABLE QString getRandom();
+        Q_INVOKABLE void get(QJSValue callback);
+        Q_INVOKABLE void get(QJSValue callback, bool random);
         
     Q_SIGNALS:
         void countChanged();
         void itemChanged(const QString &path);
     
-    public Q_SLOTS:
-        void slotWrapItemChanged(const QString &path);
+    private Q_SLOTS:
+        void slotItemChanged(const QString &path);
+        void slotFinished(KJob *job);
         
     private:
         int random(int min, int max);
-        
         QStringList m_filters;
         QHash<QString, QStringList> m_pathMap;
         QStringList m_allFiles;
         QString m_watchFile;
         QFileSystemWatcher m_watcher;
+        
+        QJSValue m_callback;
+        QString m_fileExt;
 
 };
 
