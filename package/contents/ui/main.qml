@@ -416,11 +416,12 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottomMargin: 6
             
+            /*
             PlasmaComponents.Button {
                 iconSource: 'documentinfo'
                 onClicked: {  }
             }
-            
+            */
             PlasmaComponents.Button {
                 
                 //text: activeSource.split("/").pop().slice(-25)
@@ -428,7 +429,7 @@ Item {
                 onClicked: { Qt.openUrlExternally(main.activeSource) }
                 //tooltip: activeSource
             }
-            
+            /*
             PlasmaComponents.Button {
                 iconSource: 'trash-empty'
                 onClicked: {  }
@@ -438,6 +439,7 @@ Item {
                 iconSource: 'flag-black'
                 onClicked: {  }
             }
+            */
         }
         
         // BUG TODO Fix overlay so _all_ mouse events reach lower components
