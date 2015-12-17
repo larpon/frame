@@ -26,6 +26,7 @@
 #include <QImageReader>
 #include <QTime>
 #include <QRegularExpression>
+#include <QCryptographicHash>
 
 //#include <KUrl>
 #include <KIO/StoredTransferJob>
@@ -44,6 +45,8 @@ MediaFrame::MediaFrame(QObject *parent) : QObject(parent)
     qDebug() << "Added" << list.count() << "filters";
     //qDebug() << m_filters;
     m_watchFile = "";
+    m_next = 0;
+    
     QObject::connect(&m_watcher, SIGNAL(directoryChanged(QString)), this, SLOT(slotItemChanged(QString)));
     QObject::connect(&m_watcher, SIGNAL(fileChanged(QString)), this, SLOT(slotItemChanged(QString)));
 }
@@ -52,8 +55,24 @@ MediaFrame::~MediaFrame()
 {
 }
 
-int MediaFrame::count() const {
+int MediaFrame::count() const
+{
     return m_allFiles.count();
+}
+
+
+bool MediaFrame::random() const
+{
+    return m_random;
+}
+
+void MediaFrame::setRandom(const bool &random)
+{
+    if (random != m_random)
+    {
+        m_random = random;
+        emit randomChanged();
+    }
 }
 
 int MediaFrame::random(int min, int max)
@@ -67,6 +86,16 @@ int MediaFrame::random(int min, int max)
     
     qDebug() << "random" << min << "<->" << max << "=" << ((qrand()%(max-min+1))+min);
     return ((qrand()%(max-min+1))+min);
+}
+
+QString MediaFrame::getCacheDirectory()
+{
+    return QDir::temp().absolutePath();
+}
+
+QString MediaFrame::hash(QString str)
+{
+    return QString( QCryptographicHash::hash( str.toUtf8(), QCryptographicHash::Md5).toHex() );
 }
 
 bool MediaFrame::isDir(const QString &path)
@@ -205,55 +234,117 @@ bool MediaFrame::has(const QString &path)
     return (m_pathMap.contains(path));
 }
 
-void MediaFrame::get(QJSValue callback)
+void MediaFrame::get(QJSValue successCallback)
 {
-    get(callback, false);
+    get(successCallback, QJSValue::UndefinedValue);
 }
 
-void MediaFrame::get(QJSValue callback, bool random)
+void MediaFrame::get(QJSValue successCallback, QJSValue errorCallback)
 {
     int size = m_allFiles.count() - 1;
+    
+    QString path;
+    QString errorMessage = QString("");
+    QJSValueList args;
+    
     if(size < 1)
     {
         if(size == 0)
         {
-            QJSValueList args;
-            args << QJSValue(m_allFiles.at(0));
-            callback.call(args);
-            return;
-            //return m_allFiles.at(0);
-        }
+            path = m_allFiles.at(0);
             
-        qWarning() << "No files, returning";
-        return;
+            if(successCallback.isCallable())
+            {
+                args << QJSValue(path);
+                successCallback.call(args);
+            }
+            return;
+        }
+        else
+        {
+            errorMessage = "No files available";
+            qWarning() << errorMessage;
+            
+            args << QJSValue(errorMessage);
+            errorCallback.call(args);
+            return;
+        }
     }
     
-    if(!callback.isCallable())
+    if(m_random)
     {
-        qCritical() << "No valid callback supplied, returning";
-        return;
-    }
-    
-    QString path = m_allFiles.at(this->random(0, size));
-    QUrl url = QUrl(path);
-    
-    if (url.isValid() && !url.isLocalFile())
-    {
-        // Try to load the URL
-        m_callback = callback;
-        m_fileExt = path.section('/', -1);
-        qDebug() << "extension" << m_fileExt;
-        KIO::StoredTransferJob * job = KIO::storedGet( url, KIO::NoReload, KIO::HideProgressInfo);
-        connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotFinished(KJob*)));
-        
-        //emit pictureLoaded(defaultPicture(i18n("Loading image...")));
+        path = m_allFiles.at(this->random(0, size));
     }
     else
     {
-        QJSValueList args;
-        args << QJSValue(path);
-        callback.call(args);
+        path = m_allFiles.at(m_next);
+        m_next++;
+        if(m_next > size)
+        {
+            qDebug() << "Resetting next count from" << m_next << "due to queue size" << size;
+            m_next = 0;
+        }
+            
     }
+    
+    QUrl url = QUrl(path);
+    
+    if(url.isValid())
+    {
+        QString localPath = url.toString(QUrl::PreferLocalFile);
+            
+        if (!isFile(localPath))
+        {
+            m_filename = path.section('/', -1);
+            
+            QString cachedFile = getCacheDirectory()+"/"+hash(path)+"_"+m_filename;
+            
+            if(isFile(cachedFile))
+            {
+                // File has been cached
+                qDebug() << path << "is cached as" << cachedFile;
+                
+                if(successCallback.isCallable())
+                {
+                    args << QJSValue(cachedFile);
+                    successCallback.call(args);
+                }
+                return;
+            }
+            
+            m_successCallback = successCallback;
+            m_errorCallback = errorCallback;
+            m_filename = cachedFile;
+            
+            qDebug() << path << "doesn't exist locally, trying remote.";
+            
+            KIO::StoredTransferJob * job = KIO::storedGet( url, KIO::NoReload, KIO::HideProgressInfo);
+            connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotFinished(KJob*)));
+            
+        }
+        else
+        {
+            if(successCallback.isCallable())
+            {
+                args << QJSValue(path);
+                successCallback.call(args);
+            }
+            return;
+        }
+    }
+    else
+    {
+        errorMessage = path+" is not a valid URL";
+        qCritical() << errorMessage;
+        
+        if(errorCallback.isCallable())
+        {
+            args << QJSValue(errorMessage);
+            errorCallback.call(args);
+        }
+        return;
+    }
+    
 }
 
 void MediaFrame::slotItemChanged(const QString &path)
@@ -263,24 +354,49 @@ void MediaFrame::slotItemChanged(const QString &path)
 
 void MediaFrame::slotFinished(KJob *job)
 {
+    QString errorMessage = QString("");
     QJSValueList args;
-    if (job->error()) {
-        qCritical() << "Error loading image:" << job->errorString();
+    
+    if (job->error())
+    {
+        errorMessage = "Error loading image: " + job->errorString();
+        qCritical() << errorMessage;
         
-        args << QJSValue("file://error.png");
-        m_callback.call(args);
-        //image = defaultPicture(i18n("Error loading image: %1", job->errorString()));
-    } else if (KIO::StoredTransferJob *transferJob = qobject_cast<KIO::StoredTransferJob *>(job)) {
+        if(m_errorCallback.isCallable())
+        {
+            args << QJSValue(errorMessage);
+            m_errorCallback.call(args);
+        }
+    }
+    else if (KIO::StoredTransferJob *transferJob = qobject_cast<KIO::StoredTransferJob *>(job))
+    {
         QImage image;
-        QString path = QDir::temp().absolutePath()+"/"+m_fileExt;
+        
+        // TODO make proper caching calls
+        QString path = m_filename;
+        qDebug() << "Saving download to" << path;
+        
         image.loadFromData(transferJob->data());
-        qDebug() << "Successfully downloaded, saving image to" << path;
         image.save(path);
         
         qDebug() << "Saved to" << path;
         
-        args << QJSValue(path);
-        m_callback.call(args);
-    } else
-        qDebug() << "Super yuck!";
+        if(m_successCallback.isCallable())
+        {
+            args << QJSValue(path);
+            m_successCallback.call(args);
+        }
+    }
+    else
+    {
+        errorMessage = "Unknown error occured";
+        
+        qCritical() << errorMessage;
+        
+        if(m_errorCallback.isCallable())
+        {
+            args << QJSValue(errorMessage);
+            m_errorCallback.call(args);
+        }
+    }
 }

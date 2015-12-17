@@ -33,12 +33,16 @@ class MediaFrame : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(bool random READ random WRITE setRandom NOTIFY randomChanged)
     
     public:
         MediaFrame(QObject *parent = 0);
         ~MediaFrame();
         
         int count() const;
+        
+        bool random() const;
+        void setRandom(const bool &random);
         
         Q_INVOKABLE bool isDir(const QString &path);
         Q_INVOKABLE bool isDirEmpty(const QString &path);
@@ -53,10 +57,11 @@ class MediaFrame : public QObject
         Q_INVOKABLE bool has(const QString &path);
         
         Q_INVOKABLE void get(QJSValue callback);
-        Q_INVOKABLE void get(QJSValue callback, bool random);
+        Q_INVOKABLE void get(QJSValue callback, QJSValue error_callback);
         
     Q_SIGNALS:
         void countChanged();
+        void randomChanged();
         void itemChanged(const QString &path);
     
     private Q_SLOTS:
@@ -65,15 +70,21 @@ class MediaFrame : public QObject
         
     private:
         int random(int min, int max);
+        QString getCacheDirectory();
+        QString hash(QString string);
+        
         QStringList m_filters;
         QHash<QString, QStringList> m_pathMap;
         QStringList m_allFiles;
         QString m_watchFile;
         QFileSystemWatcher m_watcher;
         
-        QJSValue m_callback;
-        QString m_fileExt;
-
+        QJSValue m_successCallback;
+        QJSValue m_errorCallback;
+        QString m_filename;
+        
+        bool m_random;
+        int m_next;
 };
 
 #endif

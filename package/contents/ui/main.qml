@@ -41,6 +41,7 @@ Item {
 
     MediaFrame {
         id: items
+        random: true
     }
     
     property int implicitWidth: units.gridUnit * 30
@@ -129,7 +130,11 @@ Item {
             items.get(function(filePath){
                 setActiveSource(filePath)
                 countDownTimer.restart()
-            },true)
+                //unsetLoading()
+            },function(errorMessage){
+                //unsetLoading()
+                console.error('Error while getting next image',errorMessage)
+            })
         }
         
         
