@@ -10,5 +10,5 @@ Use cmake
 * Most or all missing or forgotten features of original KDE4 widget (like the resizing, aspect ratio stuff)
 * Blacklist support
 * Move to trash support
-* Extended Image/Video information
 * Video files support
+* Extended Image/Video information
