@@ -31,100 +31,61 @@ Item {
     width: parent.width
     height: parent.height
 
-    property int cfg_interval: 6850
+    property alias cfg_interval: intervalSpinBox.value
     property alias cfg_randomize: randomizeCheckBox.checked
     property alias cfg_pauseOnMouseOver: pauseOnMouseOverCheckBox.checked
     property alias cfg_useBackground: useBackgroundCheckBox.checked
     property alias cfg_leftClickOpenImage: leftClickOpenImageCheckBox.checked
     property alias cfg_showCountdown: showCountdownCheckBox.checked
-    
+
     ColumnLayout {
-        
+
         width: parent.width
         height: parent.height
 
         RowLayout {
             Layout.fillWidth: true
-            
-            Text {
-                //Layout.fillWidth: true
-                
+
+            Label {
                 text: i18n("Change picture every")
             }
-            
-            TextField {
-                id: intervalTextField
 
-                //Layout.fillWidth: true
+            SpinBox {
 
-                placeholderText: i18n("milliseconds")
-                
-                text: root.cfg_interval
-                
-                onTextChanged: {
-                    cfg_interval = parseInt(text)
-                }
-            }
-            
-            Text {
-                text: i18n("milliseconds")
+                id: intervalSpinBox
+
+                suffix: i18n("s")
+                decimals: 1
+
+                // Once a day should be high enough
+                maximumValue: 24*(60*60)
             }
         }
-        
-        RowLayout {
-            Layout.fillWidth: true
-            
-            CheckBox {
-                id: randomizeCheckBox
-                text: i18n("Randomize items")
-                checked: true
-            }
-            
+
+        CheckBox {
+            id: randomizeCheckBox
+            text: i18n("Randomize items")
         }
-        
-        RowLayout {
-            Layout.fillWidth: true
-            
-            CheckBox {
-                id: pauseOnMouseOverCheckBox
-                text: i18n("Pause on mouseover")
-                checked: true
-            }
-            
+
+        CheckBox {
+            id: pauseOnMouseOverCheckBox
+            text: i18n("Pause on mouseover")
         }
-        
-        RowLayout {
-            Layout.fillWidth: true
-            
-            CheckBox {
-                id: useBackgroundCheckBox
-                text: i18n("Background frame")
-                checked: true
-            }
-            
+
+        CheckBox {
+            id: useBackgroundCheckBox
+            text: i18n("Background frame")
         }
-        
-        RowLayout {
-            Layout.fillWidth: true
-            
-            CheckBox {
-                id: leftClickOpenImageCheckBox
-                text: i18n("Left click image opens in external viewer")
-                checked: true
-            }
-            
+
+        CheckBox {
+            id: leftClickOpenImageCheckBox
+            text: i18n("Left click image opens in external viewer")
         }
-        
-        RowLayout {
-            Layout.fillWidth: true
-            
-            CheckBox {
-                id: showCountdownCheckBox
-                text: i18n("Show countdown")
-                checked: true
-            }
-            
+
+        CheckBox {
+            id: showCountdownCheckBox
+            text: i18n("Show countdown")
         }
-        
+
     }
 }
