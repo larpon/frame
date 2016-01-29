@@ -38,7 +38,6 @@ Item {
     function addPath(object) {
         pathModel.append( object )
         pathList.push( JSON.stringify(object) )
-        console.debug(pathList,pathList.length,plasmoid.configuration.pathList,plasmoid.configuration.pathList.length)
     }
 
     function removePath(index) {

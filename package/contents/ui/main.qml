@@ -65,7 +65,7 @@ Item {
     property bool isTransitioning: faderAnimation.running
 
     onActiveSourceChanged: {
-        console.debug("active source",activeSource)
+        //console.debug("active source",activeSource)
         items.watch(activeSource)
     }
 
@@ -150,7 +150,7 @@ Item {
 
     function pushHistory(entry) {
         if(entry != "") {
-            console.debug("pushing to history",entry)
+            //console.debug("pushing to history",entry)
 
             // Don't keep a sane size of history
             if(history.length > 50)
@@ -170,13 +170,13 @@ Item {
         var t = history
         var entry = t.pop()
         history = t
-        console.debug("poping from history",entry)
+        //console.debug("poping from history",entry)
         return entry
     }
 
     function pushFuture(entry) {
         if(entry != "") {
-            console.debug("pushing to future",entry)
+            //console.debug("pushing to future",entry)
             // NOTE see comment in "pushHistory"
             var t = future
             t.push(entry)
@@ -189,7 +189,7 @@ Item {
         var t = future
         var entry = t.pop()
         future = t
-        console.debug("poping from future",entry)
+        //console.debug("poping from future",entry)
         return entry
     }
 

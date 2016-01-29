@@ -84,7 +84,7 @@ int MediaFrame::random(int min, int max)
         max = temp;
     }
 
-    qDebug() << "random" << min << "<->" << max << "=" << ((qrand()%(max-min+1))+min);
+    //qDebug() << "random" << min << "<->" << max << "=" << ((qrand()%(max-min+1))+min);
     return ((qrand()%(max-min+1))+min);
 }
 
@@ -130,7 +130,7 @@ void MediaFrame::add(const QString &path, bool recursive)
 
     QUrl url = QUrl(path);
     QString localPath = url.toString(QUrl::PreferLocalFile);
-    qDebug() << "Local path" << localPath;
+    //qDebug() << "Local path" << localPath;
 
     QStringList paths;
     QString filePath;
@@ -147,7 +147,7 @@ void MediaFrame::add(const QString &path, bool recursive)
                 filePath = dirIterator.filePath();
                 paths.append(filePath);
                 m_allFiles.append(filePath);
-                qDebug() << "Appended" << filePath;
+                //qDebug() << "Appended" << filePath;
                 emit countChanged();
             }
             if(paths.count() > 0)
@@ -211,7 +211,7 @@ void MediaFrame::watch(const QString &path)
     {
         if(m_watchFile != "")
         {
-            qDebug() << "Removing" << m_watchFile << "from watch list";
+            //qDebug() << "Removing" << m_watchFile << "from watch list";
             m_watcher.removePath(m_watchFile);
         }
         else
@@ -219,13 +219,13 @@ void MediaFrame::watch(const QString &path)
             qDebug() << "Nothing in watch list";
         }
 
-        qDebug() << "watching" << localPath << "for changes";
+        //qDebug() << "watching" << localPath << "for changes";
         m_watcher.addPath(localPath);
         m_watchFile = QString(localPath);
     }
     else
     {
-        qWarning() << "Can't watch" << path << "for changes";
+        qWarning() << "Can't watch remote file" << path << "for changes";
     }
 }
 
