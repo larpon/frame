@@ -16,8 +16,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  2.010-1301, USA.
  */
 
-#ifndef PICTURESLIDE_H
-#define PICTURESLIDE_H
+#ifndef MEDIAFRAME_H
+#define MEDIAFRAME_H
 
 #include <QObject>
 #include <QStringList>
@@ -36,13 +36,13 @@ class MediaFrame : public QObject
     Q_PROPERTY(bool random READ random WRITE setRandom NOTIFY randomChanged)
 
     public:
-        MediaFrame(QObject *parent = 0);
-        ~MediaFrame();
+        MediaFrame(QObject *parent = nullptr);
+        virtual ~MediaFrame();
 
         int count() const;
 
         bool random() const;
-        void setRandom(const bool &random);
+        void setRandom(bool random);
 
         Q_INVOKABLE bool isDir(const QString &path);
         Q_INVOKABLE bool isDirEmpty(const QString &path);
@@ -71,7 +71,7 @@ class MediaFrame : public QObject
     private:
         int random(int min, int max);
         QString getCacheDirectory();
-        QString hash(QString string);
+        QString hash(const QString &str);
 
         QStringList m_filters;
         QHash<QString, QStringList> m_pathMap;
@@ -83,8 +83,8 @@ class MediaFrame : public QObject
         QJSValue m_errorCallback;
         QString m_filename;
 
-        bool m_random;
-        int m_next;
+        bool m_random = false;
+        int m_next = 0;
 };
 
 #endif

@@ -37,6 +37,18 @@ Item {
     property alias cfg_useBackground: useBackgroundCheckBox.checked
     property alias cfg_leftClickOpenImage: leftClickOpenImageCheckBox.checked
     property alias cfg_showCountdown: showCountdownCheckBox.checked
+    property alias cfg_fillMode: root.fillMode
+
+    /*
+     * Image.Stretch - the image is scaled to fit
+     * Image.PreserveAspectFit - the image is scaled uniformly to fit without cropping
+     * Image.PreserveAspectCrop - the image is scaled uniformly to fill, cropping if necessary
+     * Image.Tile - the image is duplicated horizontally and vertically
+     * Image.TileVertically - the image is stretched horizontally and tiled vertically
+     * Image.TileHorizontally - the image is stretched vertically and tiled horizontally
+     * Image.Pad - the image is not transformed
+     */
+    property int fillMode: Image.PreserveAspectFit
 
     ColumnLayout {
 
@@ -59,6 +71,50 @@ Item {
 
                 // Once a day should be high enough
                 maximumValue: 24*(60*60)
+            }
+        }
+
+        ColumnLayout {
+            RowLayout {
+                Layout.fillWidth: true
+
+                Label {
+                    text: i18n("Fill mode")
+                }
+
+                ComboBox {
+                    id: comboBox
+                    currentIndex: 1
+                    model: ListModel {
+                        id: comboBoxItems
+                        ListElement { text: "Stretch"; value: Image.Stretch; description: "The image is scaled to fit" }
+                        ListElement { text: "Preserve aspect fit"; value: Image.PreserveAspectFit; description: "The image is scaled uniformly to fit without cropping" }
+                        ListElement { text: "Preserve aspect crop"; value: Image.PreserveAspectCrop; description: "The image is scaled uniformly to fill, cropping if necessary" }
+                        ListElement { text: "Tile"; value: Image.Tile; description: "The image is duplicated horizontally and vertically" }
+                        ListElement { text: "Tile vertically"; value: Image.TileVertically; description: "The image is stretched horizontally and tiled vertically" }
+                        ListElement { text: "Tile horizontally"; value: Image.TileHorizontally; description: "The image is stretched vertically and tiled horizontally" }
+                        ListElement { text: "Pad"; value: Image.Pad; description: "The image is not transformed" }
+                    }
+
+                    onActivated: {
+                        root.fillMode = comboBoxItems.get(index).value
+                        fillModeDescription.text = comboBoxItems.get(index).description
+                    }
+
+                    // Stupid hack to avoid "ListElement: Cannot use script for property value" error
+                    Component.onCompleted: {
+                        for (var i=0; i < comboBoxItems.count; i++) {
+                            var text = comboBoxItems.get(i).text
+                            comboBoxItems.get(i).text = i18n(text)
+                            var description = comboBoxItems.get(i).description
+                            comboBoxItems.get(i).description = description
+                        }
+                    }
+                }
+            }
+            Label {
+                id: fillModeDescription
+                text: i18n("The image is scaled uniformly to fit without cropping")
             }
         }
 

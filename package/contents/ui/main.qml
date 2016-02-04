@@ -58,19 +58,14 @@ Item {
     property var history: []
     property var future: []
 
-    property bool pause: false
+    property bool pause: overlayMouseArea.containsMouse
 
-    property int itemCount: (items.count + future.length)
-    property bool hasItems: ((itemCount > 0) || (future.length > 0))
-    property bool isTransitioning: faderAnimation.running
+    readonly property int itemCount: (items.count + future.length)
+    readonly property bool hasItems: ((itemCount > 0) || (future.length > 0))
+    readonly property bool isTransitioning: faderAnimation.running
 
     onActiveSourceChanged: {
-        //console.debug("active source",activeSource)
         items.watch(activeSource)
-    }
-
-    onPauseChanged: {
-        //console.debug("paused",pause)
     }
 
     onHasItemsChanged: {
@@ -121,12 +116,10 @@ Item {
 
         if(future.length > 0) {
             setActiveSource(popFuture())
-            countDownTimer.restart()
         } else {
             //setLoading()
             items.get(function(filePath){
                 setActiveSource(filePath)
-                countDownTimer.restart()
                 //unsetLoading()
             },function(errorMessage){
                 //unsetLoading()
@@ -240,7 +233,7 @@ Item {
 
 
                 anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
+                fillMode: plasmoid.configuration.fillMode
                 opacity: 0
 
                 cache: false
@@ -252,7 +245,7 @@ Item {
                 id: frontImage
 
                 anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
+                fillMode: plasmoid.configuration.fillMode
 
                 cache: false
                 source: activeSource
@@ -267,6 +260,7 @@ Item {
         }
 
         // BUG TODO fix the rendering of the drop shadow
+        /*
         DropShadow {
             id: itemViewDropShadow
             anchors.fill: parent
@@ -277,6 +271,7 @@ Item {
             color: "#80000000"
             source: frontImage
         }
+        */
 
     }
 
@@ -294,8 +289,8 @@ Item {
         id: faderAnimation
 
         ParallelAnimation {
-            NumberAnimation { target: frontImage; property: "opacity"; to: 0; duration: 450 }
-            NumberAnimation { target: bufferImage; property: "opacity"; to: 1; duration: 450 }
+            OpacityAnimator { target: frontImage; from: 1; to: 0; duration: 450 }
+            OpacityAnimator { target: bufferImage; from: 0; to: 1; duration: 450 }
         }
         ScriptAction {
             script: {
@@ -334,7 +329,7 @@ Item {
         anchors.fill: parent
 
         visible: hasItems
-        opacity: 0
+        opacity: overlayMouseArea.containsMouse ? 1 : 0
 
         Behavior on opacity {
             NumberAnimation {}
@@ -402,16 +397,6 @@ Item {
 
             propagateComposedEvents: true
 
-            onEntered: {
-                overlay.opacity = 1
-                if(plasmoid.configuration.pauseOnMouseOver) main.pause = true
-            }
-
-            onExited: {
-                overlay.opacity = 0
-                if(plasmoid.configuration.pauseOnMouseOver) main.pause = false
-            }
-
             //onClicked: mouse.accepted = false;
             onPressed: mouse.accepted = false;
             //onReleased: mouse.accepted = false;
@@ -425,111 +410,51 @@ Item {
 
     // Visualization of the count down
 
-    // TODO Find a nicer count down visualization
-    // - maybe based on a QML Animation to offload to an animation thread
-    // - don't use a timer
-    Timer {
-        id: countDownTimer
-
-        property real elapsed: 0
-        property real steps: (plasmoid.configuration.interval*1000) / 500
-
-        interval: (plasmoid.configuration.interval*1000) / steps
-        repeat: true
-        running: nextTimer.running
-        triggeredOnStart: true
-        onTriggered: {
-            progressBar.value = elapsed / steps
-            elapsed++
-        }
-        onRunningChanged: {
-            if(!running)
-                elapsed = 0
-        }
-    }
-
-    ProgressBar {
-        id: progressBar
+    Rectangle {
+        id: progress
 
         visible: plasmoid.configuration.showCountdown && hasItems && itemCount > 1
 
-        value: 0
-        style: ProgressBarStyle {
-            panel : Rectangle
-            {
-                color: "transparent"
-                implicitWidth: Math.max(main.width, main.height) / 20
-                implicitHeight: implicitWidth
+        color: "transparent"
 
-                Rectangle
-                {
-                    id: outerRing
-                    z: 0
-                    anchors.fill: parent
+        implicitWidth: units.gridUnit
+        implicitHeight: implicitWidth
 
-                    opacity:  pause ? 0.1 : 0.5
+        Rectangle {
+            anchors.fill: parent
 
-                    radius: Math.max(width, height) / 2
-                    color: "transparent"
-                    border.color: "gray"
-                    border.width: 8
+            opacity:  pause ? 0.1 : 0.5
+
+            radius: width / 2
+            color: "gray"
+
+            Rectangle {
+                id: innerRing
+                anchors.fill: parent
+
+                scale: 0
+
+                radius: width / 2
+
+                color: "lightblue"
+
+                ScaleAnimator on scale {
+                    running: nextTimer.running
+                    loops: Animation.Infinite
+                    from: 0;
+                    to: 1;
+                    duration: nextTimer.interval
                 }
 
-                Rectangle
-                {
-                    id: innerRing
-                    z: 1
-                    anchors.fill: parent
-                    anchors.margins: (outerRing.border.width - border.width) / 2
-
-                    opacity:  pause ? 0.1 : 0.5
-
-                    radius: outerRing.radius
-                    color: "transparent"
-                    border.color: "lightblue"
-                    border.width: 4
-
-                    ConicalGradient
-                    {
-                        source: innerRing
-                        anchors.fill: parent
-                        gradient: Gradient
-                        {
-                            GradientStop { position: 0.00; color: "white" }
-                            GradientStop { position: control.value; color: "white" }
-                            GradientStop { position: control.value + 0.01; color: "transparent" }
-                            GradientStop { position: 1.00; color: "transparent" }
-                        }
-                    }
-                }
-
-                PlasmaCore.IconItem {
-                    id: pauseIcon
-                    visible: pause
-                    anchors.fill: parent
-                    source: "media-playback-pause"
-                    colorGroup: PlasmaCore.ColorScope.colorGroup
-
-                    /*
-                    PlasmaComponents.BusyIndicator {
-                        id: connectingIndicator
-
-                        anchors.fill: parent
-                        running: hasItems
-                        visible: running
-                    }
-                    */
-                }
-                /*
-                Text
-                {
-                    id: progressLabel
-                    anchors.centerIn: parent
-                    color: "black"
-                    text: (control.value * 100).toFixed() + "%"
-                }
-                */
             }
+        }
+
+        PlasmaCore.IconItem {
+            id: pauseIcon
+            visible: pause
+            anchors.fill: parent
+            source: "media-playback-pause"
+            colorGroup: PlasmaCore.ColorScope.colorGroup
         }
     }
 
