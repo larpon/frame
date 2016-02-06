@@ -55,9 +55,6 @@ Item {
     property string activeSource: ""
     property string transitionSource: ""
 
-    //property var history: []
-    //property var future: []
-
     property bool pause: overlayMouseArea.containsMouse
 
     readonly property int itemCount: (items.count + items.futureLength())
@@ -126,8 +123,6 @@ Item {
                 console.error("Error while getting next image",errorMessage)
             })
         }
-
-
     }
 
     function previousItem() {
@@ -140,54 +135,6 @@ Item {
     function blacklistItem() {
         // TODO
     }
-
-    /*
-    function pushHistory(entry) {
-        if(entry != "") {
-            //console.debug("pushing to history",entry)
-
-            // Keep a sane size of history
-            if(history.length > 25)
-                history.shift()
-
-            // TODO (move to native code?)
-            // Rather nasty trick to let QML know that the array has changed
-            // We do this because we're doing actions based on the .length property
-            var t = history
-            t.push(entry)
-            history = t
-        }
-    }
-
-
-    function popHistory() {
-        // NOTE see comment in "pushHistory"
-        var t = history
-        var entry = t.pop()
-        history = t
-        //console.debug("poping from history",entry)
-        return entry
-    }
-
-    function pushFuture(entry) {
-        if(entry != "") {
-            //console.debug("pushing to future",entry)
-            // NOTE see comment in "pushHistory"
-            var t = future
-            t.push(entry)
-            future = t
-        }
-    }
-
-    function popFuture() {
-        // NOTE see comment in "pushHistory"
-        var t = future
-        var entry = t.pop()
-        future = t
-        //console.debug("poping from future",entry)
-        return entry
-    }
-    */
 
     Connections {
         target: items
