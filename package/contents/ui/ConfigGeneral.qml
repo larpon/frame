@@ -39,8 +39,8 @@ Item {
     property alias cfg_leftClickOpenImage: leftClickOpenImageCheckBox.checked
     //property alias cfg_showCountdown: showCountdownCheckBox.checked
     property alias cfg_fillMode: root.fillMode
-    property alias cfg_useNextImageCommand: commandRadioButton.checked
-    property alias cfg_nextImageCommand: commandField.text
+    property alias cfg_useCustomCommand: commandRadioButton.checked
+    property alias cfg_customCommand: commandField.text
 
     /*
      * Image.Stretch - the image is scaled to fit
@@ -157,8 +157,13 @@ Item {
 
             RadioButton {
                 id: commandRadioButton
-                text: i18n("Use a command to decide what to display")
+                text: i18n("Run a command to decide what to display")
                 exclusiveGroup: imageSourceMode
+            }
+
+            Label {
+                text: "Command must print a single path or URL upon execution."
+                font.italic: true
             }
 
             TextField {
@@ -166,7 +171,8 @@ Item {
 
                 enabled: commandRadioButton.checked
 
-                // anchors.left: commandRadioButton
+                anchors.right: parent.right
+                anchors.left:  parent.left
             }
         }
 

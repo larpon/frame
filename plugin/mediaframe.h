@@ -25,6 +25,7 @@
 #include <QHash>
 #include <QFileSystemWatcher>
 #include <QJSValue>
+#include <QProcess>
 
 #include <KIO/Job>
 
@@ -89,6 +90,7 @@ class MediaFrame : public QObject
     private Q_SLOTS:
         void slotItemChanged(const QString &path);
         void slotDownloadFinished(KJob *job);
+        void slotCommandFinished(int exitCode, QProcess::ExitStatus exitStatus);
         void slotNextUriGotten(const QString &path);
 
     private:
@@ -105,9 +107,8 @@ class MediaFrame : public QObject
         QStringList m_history;
         QStringList m_future;
 
-        QJSValue m_successCallback;
-        QJSValue m_errorCallback;
         QString m_filename;
+        QProcess *m_customCommandProc = nullptr;
 
         bool m_random = false;
         int m_next = 0;

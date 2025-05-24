@@ -22,6 +22,7 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QUrl>
+#include <QProcess>
 #include <QDebug>
 #include <QImageReader>
 #include <QTime>
@@ -95,7 +96,11 @@ void MediaFrame::setCustomCommand(QString val)
 
 QString MediaFrame::getCacheDirectory()
 {
-    return QDir::temp().absolutePath();
+    QDir temp = QDir::temp();
+    QString path = temp.absolutePath() + "/.org.kde.plasma.mediaframe";
+    temp.mkpath(path);
+
+    return path;
 }
 
 QString MediaFrame::hash(const QString &str)
@@ -241,9 +246,11 @@ void MediaFrame::requestNext()
 {
     if (m_useCustomCommand)
     {
-
+        m_customCommandProc = new QProcess();
+        connect(m_customCommandProc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(slotCommandFinished(int, QProcess::ExitStatus)));
+        m_customCommandProc->start("/bin/sh", {"-c", m_customCommand});     // They pass the command with args so the stirng needs to be interpreted by a shell programme
     }
-    else 
+    else
     {
         QString path;
         int size = m_allFiles.count() - 1;
@@ -276,6 +283,25 @@ void MediaFrame::requestNext()
     }
 }
 
+void MediaFrame::slotCommandFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    if (exitCode != 0)
+    {
+        QString errorMessage = QString("Command finished with status %1:\n %2").arg(exitCode).arg(m_customCommand);
+        qCritical() << errorMessage;
+
+        emit nextItemGotten("", errorMessage);
+    }
+    else
+    {
+        QString output = m_customCommandProc->readAllStandardOutput();
+        slotNextUriGotten(output.trimmed());
+    }
+
+    delete m_customCommandProc;
+    m_customCommandProc = nullptr;
+}
+
 void MediaFrame::slotNextUriGotten(const QString &path)
 {
     QUrl url = QUrl(path);
@@ -286,7 +312,7 @@ void MediaFrame::slotNextUriGotten(const QString &path)
         if (!isFile(localPath)) {
             m_filename = path.section('/', -1);
 
-            QString cachedFile = getCacheDirectory()+QLatin1Char('/')+hash(path)+QLatin1Char('_')+m_filename;
+            QString cachedFile = getCacheDirectory()+QLatin1Char('/')+hash(path)+QLatin1Char('.')+m_filename.section('.', -1)/*+QLatin1Char('_')+m_filename*/;   // Including the filename introduced bugs because QML URL-decodes seemingly URL-encoded local filenames when passed as a file:// URL
 
             if(isFile(cachedFile)) {
                 // File has been cached
@@ -301,6 +327,7 @@ void MediaFrame::slotNextUriGotten(const QString &path)
 
             KIO::StoredTransferJob * job = KIO::storedGet( url, KIO::NoReload, KIO::HideProgressInfo);
             connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotDownloadFinished(KJob*)));
+            job->exec();
 
         } else {
             emit nextItemGotten(localPath, "");

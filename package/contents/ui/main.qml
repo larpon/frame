@@ -37,8 +37,8 @@ Item {
     MediaFrame {
         id: items
         random: plasmoid.configuration.randomize
-        useCustomCommand: plasmoid.configuration.useNextImageCommand
-        customCommand: plasmoid.configuration.nextImageCommand
+        useCustomCommand: plasmoid.configuration.useCustomCommand
+        customCommand: plasmoid.configuration.customCommand
     }
 
     Plasmoid.preferredRepresentation: plasmoid.fullRepresentation
@@ -107,7 +107,7 @@ Item {
         var active = activeSource
 
         // Only record history if we have more than one item
-        if(itemCount > 1)
+        if(itemCount > 1 || items.useCustomCommand)
             items.pushHistory(active)
 
         if(items.futureLength() > 0) {
