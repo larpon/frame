@@ -237,41 +237,25 @@ bool MediaFrame::isAdded(const QString &path)
     return (m_pathMap.contains(path));
 }
 
-void MediaFrame::get(QJSValue successCallback)
+void MediaFrame::requestNext()
 {
-    get(successCallback, QJSValue::UndefinedValue);
-}
-
-void MediaFrame::get(QJSValue successCallback, QJSValue errorCallback)
-{
-    QString path;
-    QJSValueList args;
-    QString errorMessage = QString("");
-
     if (m_useCustomCommand)
     {
 
     }
     else 
     {
+        QString path;
         int size = m_allFiles.count() - 1;
 
         if(size < 1) {
             if(size == 0) {
                 path = m_allFiles.at(0);
-
-                if(successCallback.isCallable())
-                {
-                    args << QJSValue(path);
-                    successCallback.call(args);
-                }
-                return;
             } else {
-                errorMessage = "No files available";
+                QString errorMessage = "No files available";
                 qWarning() << errorMessage;
 
-                args << QJSValue(errorMessage);
-                errorCallback.call(args);
+                emit nextItemGotten("", errorMessage);
                 return;
             }
         }
@@ -286,10 +270,14 @@ void MediaFrame::get(QJSValue successCallback, QJSValue errorCallback)
                 qDebug() << "Resetting next count from" << m_next << "due to queue size" << size;
                 m_next = 0;
             }
-
         }
-    }
 
+        slotNextUriGotten(path);
+    }
+}
+
+void MediaFrame::slotNextUriGotten(const QString &path)
+{
     QUrl url = QUrl(path);
 
     if(url.isValid()) {
@@ -303,38 +291,26 @@ void MediaFrame::get(QJSValue successCallback, QJSValue errorCallback)
             if(isFile(cachedFile)) {
                 // File has been cached
                 qDebug() << path << "is cached as" << cachedFile;
-
-                if(successCallback.isCallable()) {
-                    args << QJSValue(cachedFile);
-                    successCallback.call(args);
-                }
+                emit nextItemGotten(cachedFile, "");
                 return;
             }
 
-            m_successCallback = successCallback;
-            m_errorCallback = errorCallback;
             m_filename = cachedFile;
 
             qDebug() << path << "doesn't exist locally, trying remote.";
 
             KIO::StoredTransferJob * job = KIO::storedGet( url, KIO::NoReload, KIO::HideProgressInfo);
-            connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotFinished(KJob*)));
+            connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotDownloadFinished(KJob*)));
 
         } else {
-            if(successCallback.isCallable()) {
-                args << QJSValue(path);
-                successCallback.call(args);
-            }
+            emit nextItemGotten(localPath, "");
             return;
         }
     } else {
-        errorMessage = path+" is not a valid URL";
+        QString errorMessage = path+" is not a valid URL";
         qCritical() << errorMessage;
 
-        if(errorCallback.isCallable()) {
-            args << QJSValue(errorMessage);
-            errorCallback.call(args);
-        }
+        emit nextItemGotten("", errorMessage);
         return;
     }
 
@@ -383,7 +359,7 @@ void MediaFrame::slotItemChanged(const QString &path)
     emit itemChanged(path);
 }
 
-void MediaFrame::slotFinished(KJob *job)
+void MediaFrame::slotDownloadFinished(KJob *job)
 {
     QString errorMessage = QString("");
     QJSValueList args;
@@ -392,10 +368,7 @@ void MediaFrame::slotFinished(KJob *job)
         errorMessage = "Error loading image: " + job->errorString();
         qCritical() << errorMessage;
 
-        if(m_errorCallback.isCallable()) {
-            args << QJSValue(errorMessage);
-            m_errorCallback.call(args);
-        }
+        emit nextItemGotten("", errorMessage);
     } else if (KIO::StoredTransferJob *transferJob = qobject_cast<KIO::StoredTransferJob *>(job)) {
         QImage image;
 
@@ -408,19 +381,12 @@ void MediaFrame::slotFinished(KJob *job)
 
         qDebug() << "Saved to" << path;
 
-        if(m_successCallback.isCallable()) {
-            args << QJSValue(path);
-            m_successCallback.call(args);
-        }
+        emit nextItemGotten(path, "");
     }
     else {
         errorMessage = "Unknown error occured";
 
         qCritical() << errorMessage;
-
-        if(m_errorCallback.isCallable()) {
-            args << QJSValue(errorMessage);
-            m_errorCallback.call(args);
-        }
+        emit nextItemGotten("", errorMessage);
     }
 }

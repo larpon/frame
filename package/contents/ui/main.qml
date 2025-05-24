@@ -114,7 +114,7 @@ Item {
             setActiveSource(items.popFuture())
         } else {
             //setLoading()
-            items.get()
+            items.requestNext()
         }
     }
 

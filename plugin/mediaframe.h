@@ -70,8 +70,7 @@ class MediaFrame : public QObject
 
         Q_INVOKABLE bool isAdded(const QString &path);
 
-        Q_INVOKABLE void get(QJSValue callback);
-        Q_INVOKABLE void get(QJSValue callback, QJSValue error_callback);
+        Q_INVOKABLE void requestNext();
 
         Q_INVOKABLE void pushHistory(const QString &string);
         Q_INVOKABLE QString popHistory();
@@ -85,10 +84,12 @@ class MediaFrame : public QObject
         void countChanged();
         void randomChanged();
         void itemChanged(const QString &path);
+        void nextItemGotten(const QString &filePath, const QString &errorMessage);
 
     private Q_SLOTS:
         void slotItemChanged(const QString &path);
-        void slotFinished(KJob *job);
+        void slotDownloadFinished(KJob *job);
+        void slotNextUriGotten(const QString &path);
 
     private:
         int random(int min, int max);
