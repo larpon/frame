@@ -37,6 +37,8 @@ Item {
     MediaFrame {
         id: items
         random: plasmoid.configuration.randomize
+        useCustomCommand: plasmoid.configuration.useNextImageCommand
+        customCommand: plasmoid.configuration.nextImageCommand
     }
 
     Plasmoid.preferredRepresentation: plasmoid.fullRepresentation
@@ -112,13 +114,7 @@ Item {
             setActiveSource(items.popFuture())
         } else {
             //setLoading()
-            items.get(function(filePath){
-                setActiveSource(filePath)
-                //unsetLoading()
-            },function(errorMessage){
-                //unsetLoading()
-                console.error("Error while getting next image",errorMessage)
-            })
+            items.get()
         }
     }
 
@@ -138,6 +134,16 @@ Item {
             setActiveSource(path)
         }
 
+        onNextItemGotten: function (filePath, errorMessage) {
+            if (errorMessage) {
+                //unsetLoading()
+                console.error("Error while getting next image",errorMessage)
+            }
+            else {
+                setActiveSource(filePath)
+                //unsetLoading()
+            }
+        }
     }
 
     Timer {

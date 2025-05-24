@@ -35,6 +35,9 @@ class MediaFrame : public QObject
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool random READ random WRITE setRandom NOTIFY randomChanged)
 
+    Q_PROPERTY(bool useCustomCommand WRITE setUseCustomCommand)
+    Q_PROPERTY(QString customCommand WRITE setCustomCommand)
+
     public:
 
         enum AddOption
@@ -51,6 +54,9 @@ class MediaFrame : public QObject
 
         bool random() const;
         void setRandom(bool random);
+
+        void setUseCustomCommand(bool val);
+        void setCustomCommand(QString val);
 
         Q_INVOKABLE bool isDir(const QString &path);
         Q_INVOKABLE bool isDirEmpty(const QString &path);
@@ -104,6 +110,9 @@ class MediaFrame : public QObject
 
         bool m_random = false;
         int m_next = 0;
+
+        bool m_useCustomCommand = false;
+        QString m_customCommand = "";
 };
 
 #endif

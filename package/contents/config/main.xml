@@ -26,6 +26,12 @@
     <entry name="fillMode" type="int">
         <default>1</default>
     </entry>
+    <entry name="useNextImageCommand" type="Bool">
+        <default>false</default>
+    </entry>
+    <entry name="nextImageCommand" type="String">
+        <default>/foo/bar</default>
+    </entry>
   </group>
   <group name="Paths">
     <entry name="pathList" type="StringList">

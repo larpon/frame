@@ -83,6 +83,16 @@ int MediaFrame::random(int min, int max)
     return ((qrand() % (max - min + 1) ) + min);
 }
 
+void MediaFrame::setUseCustomCommand(bool val)
+{
+    m_useCustomCommand = val;
+}
+
+void MediaFrame::setCustomCommand(QString val)
+{
+    m_customCommand = val;
+}
+
 QString MediaFrame::getCacheDirectory()
 {
     return QDir::temp().absolutePath();
@@ -234,43 +244,50 @@ void MediaFrame::get(QJSValue successCallback)
 
 void MediaFrame::get(QJSValue successCallback, QJSValue errorCallback)
 {
-    int size = m_allFiles.count() - 1;
-
     QString path;
-    QString errorMessage = QString("");
     QJSValueList args;
+    QString errorMessage = QString("");
 
-    if(size < 1) {
-        if(size == 0) {
-            path = m_allFiles.at(0);
+    if (m_useCustomCommand)
+    {
 
-            if(successCallback.isCallable())
-            {
-                args << QJSValue(path);
-                successCallback.call(args);
-            }
-            return;
-        } else {
-            errorMessage = "No files available";
-            qWarning() << errorMessage;
-
-            args << QJSValue(errorMessage);
-            errorCallback.call(args);
-            return;
-        }
     }
+    else 
+    {
+        int size = m_allFiles.count() - 1;
 
-    if(m_random) {
-        path = m_allFiles.at(this->random(0, size));
-    } else {
-        path = m_allFiles.at(m_next);
-        m_next++;
-        if(m_next > size)
-        {
-            qDebug() << "Resetting next count from" << m_next << "due to queue size" << size;
-            m_next = 0;
+        if(size < 1) {
+            if(size == 0) {
+                path = m_allFiles.at(0);
+
+                if(successCallback.isCallable())
+                {
+                    args << QJSValue(path);
+                    successCallback.call(args);
+                }
+                return;
+            } else {
+                errorMessage = "No files available";
+                qWarning() << errorMessage;
+
+                args << QJSValue(errorMessage);
+                errorCallback.call(args);
+                return;
+            }
         }
 
+        if(m_random) {
+            path = m_allFiles.at(this->random(0, size));
+        } else {
+            path = m_allFiles.at(m_next);
+            m_next++;
+            if(m_next > size)
+            {
+                qDebug() << "Resetting next count from" << m_next << "due to queue size" << size;
+                m_next = 0;
+            }
+
+        }
     }
 
     QUrl url = QUrl(path);
