@@ -30,6 +30,7 @@
 #include <QCryptographicHash>
 
 //#include <KUrl>
+#include <KPropertiesDialog>
 #include <KIO/StoredTransferJob>
 #include <KIO/Job>
 
@@ -57,6 +58,11 @@ MediaFrame::~MediaFrame() = default;
 int MediaFrame::count() const
 {
     return m_allFiles.count();
+}
+
+QUrl MediaFrame::currentUrl() const
+{
+    return m_currentUrl;
 }
 
 bool MediaFrame::random() const
@@ -304,9 +310,12 @@ void MediaFrame::slotCommandFinished(int exitCode, QProcess::ExitStatus exitStat
 
 void MediaFrame::slotNextUriGotten(const QString &path)
 {
-    QUrl url = QUrl(path);
+    QUrl url = QUrl::fromUserInput(path);
 
     if(url.isValid()) {
+        m_currentUrl = url;
+        emit currentUrlChanged();
+
         QString localPath = url.toString(QUrl::PreferLocalFile);
 
         if (!isFile(localPath)) {
@@ -415,5 +424,21 @@ void MediaFrame::slotDownloadFinished(KJob *job)
 
         qCritical() << errorMessage;
         emit nextItemGotten("", errorMessage);
+    }
+}
+
+void MediaFrame::showDocumentInfo()
+{
+    if (!m_useCustomCommand)
+    {
+        if (m_currentUrl.isLocalFile())
+        {
+            KPropertiesDialog* d = new KPropertiesDialog(m_currentUrl, nullptr);
+            d->show();
+        }
+    }
+    else
+    {
+        QProcess::startDetached("/bin/sh", {"-c", QString("%1 --info %2").arg(m_customCommand).arg(m_currentUrl.toString())});
     }
 }

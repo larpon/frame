@@ -318,13 +318,15 @@ Item {
             anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottomMargin: units.smallSpacing
+            spacing: units.smallSpacing
 
-            /*
             PlasmaComponents.Button {
                 iconSource: "documentinfo"
-                onClicked: {  }
+                onClicked: {
+                    items.showDocumentInfo();
+                }
             }
-            */
+
             PlasmaComponents.Button {
 
                 //text: activeSource.split("/").pop().slice(-25)

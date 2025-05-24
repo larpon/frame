@@ -34,6 +34,7 @@ class MediaFrame : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(QUrl currentUrl READ currentUrl NOTIFY currentUrlChanged)    // For cached files, this is the online source URL
     Q_PROPERTY(bool random READ random WRITE setRandom NOTIFY randomChanged)
 
     Q_PROPERTY(bool useCustomCommand WRITE setUseCustomCommand)
@@ -52,6 +53,7 @@ class MediaFrame : public QObject
         virtual ~MediaFrame();
 
         int count() const;
+        QUrl currentUrl() const;
 
         bool random() const;
         void setRandom(bool random);
@@ -81,9 +83,13 @@ class MediaFrame : public QObject
         Q_INVOKABLE QString popFuture();
         Q_INVOKABLE int futureLength();
 
+        Q_INVOKABLE void showDocumentInfo();
+
     Q_SIGNALS:
         void countChanged();
+        void currentUrlChanged();
         void randomChanged();
+
         void itemChanged(const QString &path);
         void nextItemGotten(const QString &filePath, const QString &errorMessage);
 
@@ -107,6 +113,7 @@ class MediaFrame : public QObject
         QStringList m_history;
         QStringList m_future;
 
+        QUrl m_currentUrl;  // often local
         QString m_filename;
         QProcess *m_customCommandProc = nullptr;
 
