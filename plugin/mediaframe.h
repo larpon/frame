@@ -25,6 +25,7 @@
 #include <QHash>
 #include <QFileSystemWatcher>
 #include <QJSValue>
+#include <QProcess>
 
 #include <KIO/Job>
 
@@ -33,7 +34,11 @@ class MediaFrame : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(QUrl currentUrl READ currentUrl NOTIFY currentUrlChanged)    // For cached files, this is the online source URL
     Q_PROPERTY(bool random READ random WRITE setRandom NOTIFY randomChanged)
+
+    Q_PROPERTY(bool useCustomCommand WRITE setUseCustomCommand)
+    Q_PROPERTY(QString customCommand WRITE setCustomCommand)
 
     public:
 
@@ -48,9 +53,13 @@ class MediaFrame : public QObject
         virtual ~MediaFrame();
 
         int count() const;
+        QUrl currentUrl() const;
 
         bool random() const;
         void setRandom(bool random);
+
+        void setUseCustomCommand(bool val);
+        void setCustomCommand(QString val);
 
         Q_INVOKABLE bool isDir(const QString &path);
         Q_INVOKABLE bool isDirEmpty(const QString &path);
@@ -64,8 +73,7 @@ class MediaFrame : public QObject
 
         Q_INVOKABLE bool isAdded(const QString &path);
 
-        Q_INVOKABLE void get(QJSValue callback);
-        Q_INVOKABLE void get(QJSValue callback, QJSValue error_callback);
+        Q_INVOKABLE void requestNext();
 
         Q_INVOKABLE void pushHistory(const QString &string);
         Q_INVOKABLE QString popHistory();
@@ -75,14 +83,21 @@ class MediaFrame : public QObject
         Q_INVOKABLE QString popFuture();
         Q_INVOKABLE int futureLength();
 
+        Q_INVOKABLE void showDocumentInfo();
+
     Q_SIGNALS:
         void countChanged();
+        void currentUrlChanged();
         void randomChanged();
+
         void itemChanged(const QString &path);
+        void nextItemGotten(const QString &filePath, const QString &errorMessage);
 
     private Q_SLOTS:
         void slotItemChanged(const QString &path);
-        void slotFinished(KJob *job);
+        void slotDownloadFinished(KJob *job);
+        void slotCommandFinished(int exitCode, QProcess::ExitStatus exitStatus);
+        void slotNextUriGotten(const QString &path);
 
     private:
         int random(int min, int max);
@@ -98,12 +113,15 @@ class MediaFrame : public QObject
         QStringList m_history;
         QStringList m_future;
 
-        QJSValue m_successCallback;
-        QJSValue m_errorCallback;
+        QUrl m_currentUrl;  // often local
         QString m_filename;
+        QProcess *m_customCommandProc = nullptr;
 
         bool m_random = false;
         int m_next = 0;
+
+        bool m_useCustomCommand = false;
+        QString m_customCommand = "";
 };
 
 #endif

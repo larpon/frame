@@ -37,6 +37,8 @@ Item {
     MediaFrame {
         id: items
         random: plasmoid.configuration.randomize
+        useCustomCommand: plasmoid.configuration.useCustomCommand
+        customCommand: plasmoid.configuration.customCommand
     }
 
     Plasmoid.preferredRepresentation: plasmoid.fullRepresentation
@@ -105,20 +107,14 @@ Item {
         var active = activeSource
 
         // Only record history if we have more than one item
-        if(itemCount > 1)
+        if(itemCount > 1 || items.useCustomCommand)
             items.pushHistory(active)
 
         if(items.futureLength() > 0) {
             setActiveSource(items.popFuture())
         } else {
             //setLoading()
-            items.get(function(filePath){
-                setActiveSource(filePath)
-                //unsetLoading()
-            },function(errorMessage){
-                //unsetLoading()
-                console.error("Error while getting next image",errorMessage)
-            })
+            items.requestNext()
         }
     }
 
@@ -138,6 +134,16 @@ Item {
             setActiveSource(path)
         }
 
+        onNextItemGotten: function (filePath, errorMessage) {
+            if (errorMessage) {
+                //unsetLoading()
+                console.error("Error while getting next image",errorMessage)
+            }
+            else {
+                setActiveSource(filePath)
+                //unsetLoading()
+            }
+        }
     }
 
     Timer {
@@ -312,13 +318,15 @@ Item {
             anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottomMargin: units.smallSpacing
+            spacing: units.smallSpacing
 
-            /*
             PlasmaComponents.Button {
                 iconSource: "documentinfo"
-                onClicked: {  }
+                onClicked: {
+                    items.showDocumentInfo();
+                }
             }
-            */
+
             PlasmaComponents.Button {
 
                 //text: activeSource.split("/").pop().slice(-25)

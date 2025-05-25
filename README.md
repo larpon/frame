@@ -4,6 +4,8 @@ A (work in progress) KDE Frameworks 5 / Plasmoid port of the KDE4 "(Picture) Fra
 ## Install
 Use cmake
 
+test by running `plasmawindowed org.kde.plasma.mediaframe`
+
 ## Planned TODO
 * EXIF Rotation support (should come automatically with Qt 5.5)
 * Picture of the day (when backend is available)

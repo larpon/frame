@@ -22,6 +22,7 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QUrl>
+#include <QProcess>
 #include <QDebug>
 #include <QImageReader>
 #include <QTime>
@@ -29,6 +30,7 @@
 #include <QCryptographicHash>
 
 //#include <KUrl>
+#include <KPropertiesDialog>
 #include <KIO/StoredTransferJob>
 #include <KIO/Job>
 
@@ -58,6 +60,11 @@ int MediaFrame::count() const
     return m_allFiles.count();
 }
 
+QUrl MediaFrame::currentUrl() const
+{
+    return m_currentUrl;
+}
+
 bool MediaFrame::random() const
 {
     return m_random;
@@ -83,9 +90,23 @@ int MediaFrame::random(int min, int max)
     return ((qrand() % (max - min + 1) ) + min);
 }
 
+void MediaFrame::setUseCustomCommand(bool val)
+{
+    m_useCustomCommand = val;
+}
+
+void MediaFrame::setCustomCommand(QString val)
+{
+    m_customCommand = val;
+}
+
 QString MediaFrame::getCacheDirectory()
 {
-    return QDir::temp().absolutePath();
+    QDir temp = QDir::temp();
+    QString path = temp.absolutePath() + "/.org.kde.plasma.mediaframe";
+    temp.mkpath(path);
+
+    return path;
 }
 
 QString MediaFrame::hash(const QString &str)
@@ -227,97 +248,105 @@ bool MediaFrame::isAdded(const QString &path)
     return (m_pathMap.contains(path));
 }
 
-void MediaFrame::get(QJSValue successCallback)
+void MediaFrame::requestNext()
 {
-    get(successCallback, QJSValue::UndefinedValue);
+    if (m_useCustomCommand)
+    {
+        m_customCommandProc = new QProcess();
+        connect(m_customCommandProc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(slotCommandFinished(int, QProcess::ExitStatus)));
+        m_customCommandProc->start("/bin/sh", {"-c", m_customCommand});     // They pass the command with args so the stirng needs to be interpreted by a shell programme
+    }
+    else
+    {
+        QString path;
+        int size = m_allFiles.count() - 1;
+
+        if(size < 1) {
+            if(size == 0) {
+                path = m_allFiles.at(0);
+            } else {
+                QString errorMessage = "No files available";
+                qWarning() << errorMessage;
+
+                emit nextItemGotten("", errorMessage);
+                return;
+            }
+        }
+
+        if(m_random) {
+            path = m_allFiles.at(this->random(0, size));
+        } else {
+            path = m_allFiles.at(m_next);
+            m_next++;
+            if(m_next > size)
+            {
+                qDebug() << "Resetting next count from" << m_next << "due to queue size" << size;
+                m_next = 0;
+            }
+        }
+
+        slotNextUriGotten(path);
+    }
 }
 
-void MediaFrame::get(QJSValue successCallback, QJSValue errorCallback)
+void MediaFrame::slotCommandFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
-    int size = m_allFiles.count() - 1;
+    if (exitCode != 0)
+    {
+        QString errorMessage = QString("Command finished with status %1:\n %2").arg(exitCode).arg(m_customCommand);
+        qCritical() << errorMessage;
 
-    QString path;
-    QString errorMessage = QString("");
-    QJSValueList args;
-
-    if(size < 1) {
-        if(size == 0) {
-            path = m_allFiles.at(0);
-
-            if(successCallback.isCallable())
-            {
-                args << QJSValue(path);
-                successCallback.call(args);
-            }
-            return;
-        } else {
-            errorMessage = "No files available";
-            qWarning() << errorMessage;
-
-            args << QJSValue(errorMessage);
-            errorCallback.call(args);
-            return;
-        }
+        emit nextItemGotten("", errorMessage);
+    }
+    else
+    {
+        QString output = m_customCommandProc->readAllStandardOutput();
+        slotNextUriGotten(output.trimmed());
     }
 
-    if(m_random) {
-        path = m_allFiles.at(this->random(0, size));
-    } else {
-        path = m_allFiles.at(m_next);
-        m_next++;
-        if(m_next > size)
-        {
-            qDebug() << "Resetting next count from" << m_next << "due to queue size" << size;
-            m_next = 0;
-        }
+    delete m_customCommandProc;
+    m_customCommandProc = nullptr;
+}
 
-    }
-
-    QUrl url = QUrl(path);
+void MediaFrame::slotNextUriGotten(const QString &path)
+{
+    QUrl url = QUrl::fromUserInput(path);
 
     if(url.isValid()) {
+        m_currentUrl = url;
+        emit currentUrlChanged();
+
         QString localPath = url.toString(QUrl::PreferLocalFile);
 
         if (!isFile(localPath)) {
             m_filename = path.section('/', -1);
 
-            QString cachedFile = getCacheDirectory()+QLatin1Char('/')+hash(path)+QLatin1Char('_')+m_filename;
+            QString cachedFile = getCacheDirectory()+QLatin1Char('/')+hash(path)+QLatin1Char('.')+m_filename.section('.', -1)/*+QLatin1Char('_')+m_filename*/;   // Including the filename introduced bugs because QML URL-decodes seemingly URL-encoded local filenames when passed as a file:// URL
 
             if(isFile(cachedFile)) {
                 // File has been cached
                 qDebug() << path << "is cached as" << cachedFile;
-
-                if(successCallback.isCallable()) {
-                    args << QJSValue(cachedFile);
-                    successCallback.call(args);
-                }
+                emit nextItemGotten(cachedFile, "");
                 return;
             }
 
-            m_successCallback = successCallback;
-            m_errorCallback = errorCallback;
             m_filename = cachedFile;
 
             qDebug() << path << "doesn't exist locally, trying remote.";
 
             KIO::StoredTransferJob * job = KIO::storedGet( url, KIO::NoReload, KIO::HideProgressInfo);
-            connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotFinished(KJob*)));
+            connect(job, SIGNAL(finished(KJob*)), this, SLOT(slotDownloadFinished(KJob*)));
+            job->exec();
 
         } else {
-            if(successCallback.isCallable()) {
-                args << QJSValue(path);
-                successCallback.call(args);
-            }
+            emit nextItemGotten(localPath, "");
             return;
         }
     } else {
-        errorMessage = path+" is not a valid URL";
+        QString errorMessage = path+" is not a valid URL";
         qCritical() << errorMessage;
 
-        if(errorCallback.isCallable()) {
-            args << QJSValue(errorMessage);
-            errorCallback.call(args);
-        }
+        emit nextItemGotten("", errorMessage);
         return;
     }
 
@@ -366,7 +395,7 @@ void MediaFrame::slotItemChanged(const QString &path)
     emit itemChanged(path);
 }
 
-void MediaFrame::slotFinished(KJob *job)
+void MediaFrame::slotDownloadFinished(KJob *job)
 {
     QString errorMessage = QString("");
     QJSValueList args;
@@ -375,10 +404,7 @@ void MediaFrame::slotFinished(KJob *job)
         errorMessage = "Error loading image: " + job->errorString();
         qCritical() << errorMessage;
 
-        if(m_errorCallback.isCallable()) {
-            args << QJSValue(errorMessage);
-            m_errorCallback.call(args);
-        }
+        emit nextItemGotten("", errorMessage);
     } else if (KIO::StoredTransferJob *transferJob = qobject_cast<KIO::StoredTransferJob *>(job)) {
         QImage image;
 
@@ -391,19 +417,28 @@ void MediaFrame::slotFinished(KJob *job)
 
         qDebug() << "Saved to" << path;
 
-        if(m_successCallback.isCallable()) {
-            args << QJSValue(path);
-            m_successCallback.call(args);
-        }
+        emit nextItemGotten(path, "");
     }
     else {
         errorMessage = "Unknown error occured";
 
         qCritical() << errorMessage;
+        emit nextItemGotten("", errorMessage);
+    }
+}
 
-        if(m_errorCallback.isCallable()) {
-            args << QJSValue(errorMessage);
-            m_errorCallback.call(args);
+void MediaFrame::showDocumentInfo()
+{
+    if (!m_useCustomCommand)
+    {
+        if (m_currentUrl.isLocalFile())
+        {
+            KPropertiesDialog* d = new KPropertiesDialog(m_currentUrl, nullptr);
+            d->show();
         }
+    }
+    else
+    {
+        QProcess::startDetached("/bin/sh", {"-c", QString("%1 --info %2").arg(m_customCommand).arg(m_currentUrl.toString())});
     }
 }

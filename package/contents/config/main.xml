@@ -26,6 +26,12 @@
     <entry name="fillMode" type="int">
         <default>1</default>
     </entry>
+    <entry name="useCustomCommand" type="Bool">
+        <default>false</default>
+    </entry>
+    <entry name="customCommand" type="String">
+        <default></default>
+    </entry>
   </group>
   <group name="Paths">
     <entry name="pathList" type="StringList">

@@ -31,6 +31,7 @@ Item {
     width: parent.width
     height: parent.height
 
+    // The cfg_* props are presumably bound by Plasma to `plasma.configuration.*`
     property alias cfg_interval: intervalSpinBox.value
     property alias cfg_randomize: randomizeCheckBox.checked
     property alias cfg_pauseOnMouseOver: pauseOnMouseOverCheckBox.checked
@@ -38,6 +39,8 @@ Item {
     property alias cfg_leftClickOpenImage: leftClickOpenImageCheckBox.checked
     //property alias cfg_showCountdown: showCountdownCheckBox.checked
     property alias cfg_fillMode: root.fillMode
+    property alias cfg_useCustomCommand: commandRadioButton.checked
+    property alias cfg_customCommand: commandField.text
 
     /*
      * Image.Stretch - the image is scaled to fit
@@ -49,6 +52,9 @@ Item {
      * Image.Pad - the image is not transformed
      */
     property int fillMode: Image.PreserveAspectFit
+
+    /* 0: Path list, 1: Custom command */
+    property int imageSource: 0
 
     ColumnLayout {
 
@@ -132,6 +138,41 @@ Item {
             Label {
                 id: fillModeDescription
                 text: i18n("The image is scaled uniformly to fit without cropping")
+            }
+        }
+
+        ColumnLayout {
+            ExclusiveGroup {        // https://doc.qt.io/qt-5/qml-qtquick-controls-radiobutton.html
+                id: imageSourceMode
+            }
+
+            RadioButton {
+                text: i18n("Display images from the paths list")
+                exclusiveGroup: imageSourceMode
+
+                Component.onCompleted: {
+                    this.checked = !(imageSourceMode.current == commandRadioButton)
+                }
+            }
+
+            RadioButton {
+                id: commandRadioButton
+                text: i18n("Run a command to decide what to display")
+                exclusiveGroup: imageSourceMode
+            }
+
+            Label {
+                text: "Command must print a single path or URL upon execution."
+                font.italic: true
+            }
+
+            TextField {
+                id: commandField
+
+                enabled: commandRadioButton.checked
+
+                anchors.right: parent.right
+                anchors.left:  parent.left
             }
         }
 
